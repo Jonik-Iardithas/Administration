@@ -5,7 +5,7 @@
 [System.Windows.Forms.Application]::EnableVisualStyles()
 [System.Drawing.FontFamily]::Families | ForEach-Object {$Fonts += @($_)}
 
-# ========== Constants & Variables ============================
+# ========== Variables ========================================
 
 $Offset = 0
 $Padding = 10
@@ -21,19 +21,27 @@ $L_Ptr = [System.IntPtr]::new(0)
 $S_Ptr = [System.IntPtr]::new(0)
 $SettingsFile = "$env:LOCALAPPDATA\PowerShellTools\Administration\Settings.ini"
 
+$MB_List = @{
+    Ini_01 = "Konnte Datei {0} nicht finden."
+    Ini_02 = "Administration: Fehler!"
+}
+
 # ========== Functions ========================================
 
 function Initialize-Me ([string]$FilePath)
     {
         If (!(Test-Path -Path $FilePath))
             {
-                [System.Windows.Forms.MessageBox]::Show("Konnte Datei `"$FilePath`" nicht finden.","Administration: Fehler",0)
+                [System.Windows.Forms.MessageBox]::Show(($MB_List.Ini_01 -f $FilePath),$MB_List.Ini_02,0)
                 Exit
             }
 
         $Data = [array](Get-Content -Path $FilePath)
 
-        ForEach ($i in $Data) {$ht_Result += @{$i.Split("=")[0].Trim(" ") = $i.Split("=")[-1].Trim(" ")}}
+        ForEach ($i in $Data)
+            {
+                $ht_Result += @{$i.Split("=")[0].Trim() = $i.Split("=")[-1].Trim()}
+            }
 
         return $ht_Result
     }
@@ -99,7 +107,7 @@ $Buttons = @{
     "Exit" = @{
         Size = $ButtonSizeB
         Location = "Right"
-        Exit = 0
+        Exit = $true
         }
 }
 
@@ -199,7 +207,10 @@ ForEach ($Key in ($Buttons.Keys | Sort-Object))
 
         If ($Buttons[$Key].ContainsKey("Exit"))
             {
-                $Form.CancelButton = $Button
+                If ($Buttons[$Key].Exit)
+                    {
+                        $Form.CancelButton = $Button
+                    }
             }
 
         
