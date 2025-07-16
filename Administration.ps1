@@ -12,7 +12,7 @@ $Padding = 10
 $FontIndex = $Fonts.Name.IndexOf('Verdana')
 $FontSize = 9
 $FontStyle = [System.Drawing.FontStyle]::Regular
-$FormSize = [System.Drawing.Size]::new(378,218)
+$FormSize = [System.Drawing.Size]::new(378,286)
 $ButtonSizeA = [System.Drawing.Size]::new(280,28)
 $ButtonSizeB = [System.Drawing.Size]::new(68,28)
 $ButtonBackColor = [System.Drawing.Color]::PaleGoldenrod
@@ -68,6 +68,13 @@ $Buttons = @{
         File = "$env:windir\system32\dxdiag.exe"
         Dir = "$env:windir\system32"
         }
+    "Geräte-Manager" = @{
+        Size = $ButtonSizeA
+        Location = "Left"
+        Image = "$env:windir\system32\devmgr.dll|5"
+        File = "$env:windir\system32\hdwwiz.cpl"
+        Dir = "$env:windir\system32"
+        }
     "Gruppenrichtlinien" = @{
         Size = $ButtonSizeA
         Location = "Left"
@@ -81,6 +88,13 @@ $Buttons = @{
         Image = "$env:windir\regedit.exe|0"
         File = "$env:windir\regedit.exe"
         Dir = "$env:windir"
+        }
+    "Systemeigenschaften" = @{
+        Size = $ButtonSizeA
+        Location = "Left"
+        Image = "$env:windir\system32\sysdm.cpl|0"
+        File = "$env:windir\system32\sysdm.cpl"
+        Dir = "$env:windir\system32"
         }
     "Systemsteuerung" = @{
         Size = $ButtonSizeA
@@ -139,7 +153,7 @@ $Form.ActiveControl = $Logo
 
 # ========== Insertions =======================================
 
-ForEach ($Key in ($Buttons.Keys | Sort-Object))
+ForEach ($Key in $Buttons.Keys | Sort-Object)
     {
         $Button = New-Object -TypeName System.Windows.Forms.Button
         $Button.Size = $Buttons[$Key].Size
