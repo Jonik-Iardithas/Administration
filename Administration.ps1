@@ -442,7 +442,7 @@ function Change-Color ([string]$Title, [ScriptBlock]$Action)
                     TabStop = $false
                     Location = [System.Drawing.Point]::new($X,$Y)
                     Size = [System.Drawing.Size]::new(24,24)
-                    TextAlign = [System.Windows.TextAlignment]::Center
+                    TextAlign = [System.Drawing.ContentAlignment]::MiddleCenter
                     BackColor = $Colors[$i]
                     FlatStyle = [System.Windows.Forms.FlatStyle]::Flat
                     'FlatAppearance.BorderColor' = $ColorForm.BackColor
@@ -520,7 +520,7 @@ function Change-Font ([string]$Title, [ScriptBlock]$Action)
                     Location = [System.Drawing.Point]::new($X,$Y)
                     Size = [System.Drawing.Size]::new(114,24)
                     Text = $Fonts[$i].Name.Substring(0,$Sub) + $Addendum
-                    TextAlign = [System.Windows.TextAlignment]::Center
+                    TextAlign = [System.Drawing.ContentAlignment]::MiddleCenter
                     Font = New-Object -TypeName System.Drawing.Font($Fonts[$i].Name, $Font.Size, $Font.Style)
                     FlatStyle = [System.Windows.Forms.FlatStyle]::Flat
                     BorderStyle = [System.Windows.Forms.BorderStyle]::None
