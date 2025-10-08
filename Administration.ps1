@@ -37,20 +37,19 @@ $Layout = @{
 }
 
 $Rects = [HashTable]::new(0)
+$Left = 0
 
 ForEach ($L0 in $Layout.Keys | Sort-Object)
     {
-        $Count = 0
-        $Pre = 0
+        $Top = 0
 
         ForEach ($L1 in $Layout.$L0.Keys | Sort-Object)
             {
-                $Rects += @{$L1 = [System.Drawing.Rectangle]::new($Margin.Width, ((($Count + 1) * $Margin.Height) + $Pre), $Layout.$L0.$L1.Width, $Layout.$L0.$L1.Height)}
-                $Count ++
-                $Pre += $Layout.$L0.$L1.Height
+                $Rects += @{$L1 = [System.Drawing.Rectangle]::new($Left + $Margin.Width, $Top + $Margin.Height, $Layout.$L0.$L1.Width, $Layout.$L0.$L1.Height)}
+                $Top += $Layout.$L0.$L1.Height + $Margin.Height
             }
 
-        $Margin.Width += ($Rects.Values.Width | Measure-Object -Maximum).Maximum + $Margin.Width
+        $Left += ($Layout.$L0.Values.Width | Measure-Object -Maximum).Maximum + $Margin.Width
     }
 
 $Font = @{
