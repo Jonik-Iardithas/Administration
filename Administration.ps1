@@ -106,16 +106,19 @@ $Txt_List = @{
     CMI_a_SysTray                 = "Schließen in den Infobereich"
     CMI_b_Autostart               = "Autostart bei Anmeldung"
     CMI_a_ButtonFont              = "Tasten-Schriftart"
+    CMI_a_HDDRepair               = "Laufwerk {0}:"
+    CMI_a_SFC                     = "System File Checker (sfc.exe)"
+    CMI_b_DISM                    = "Deployment Imaging Servicing and Management (dism.exe)"
     BT_TaskScheduler              = "Aufgabenplanung"
     BT_Cmd                        = "Eingabeaufforderung"
     BT_Cmd_help                   = "Befehlsübersicht"
-    BT_Cmd_chkdsk                 = "HDD überprüfen"
+    BT_Cmd_HDDRepair              = "HDD-Reparatur"
     BT_Cmd_ver                    = "Windows-Version"
     BT_Cmd_ipconfig               = "IP-/Netzwerkadresse"
     BT_Cmd_flushdns               = "DNS-Cache leeren"
+    BT_Cmd_WinRepair              = "Windows-Reparatur"
     BT_DiskManagement             = "Datenträgerverwaltung"
     BT_DirectXDiagnosis           = "DirectX-Diagnoseprogramm"
-    BT_DISM                       = "Reparatur (dism.exe)"
     BT_ImmersiveControlPanel      = "Einstellungen"
     BT_PowerConfiguration         = "Energieoptionen"
     BT_EventViewer                = "Ereignisanzeige"
@@ -127,7 +130,6 @@ $Txt_List = @{
     BT_PerformanceMonitor         = "Leistungsüberwachung"
     BT_ResourceMonitor            = "Ressourcenmonitor"
     BT_ReliabilityMonitor         = "Zuverlässigkeitsüberwachung"
-    BT_SystemFileChecker          = "Reparatur (sfc.exe)"
     BT_AppsFolder                 = "Applications"
     BT_ChangeRemoveProgramsFolder = "Programme und Features"
     BT_ConnectionsFolder          = "Netzwerkverbindungen"
@@ -149,6 +151,8 @@ $Txt_List = @{
     BT_ChangeBackground           = "Hintergrundbild anpassen"
     BT_ChangeBehavior             = "Verhalten anpassen"
     BT_ChangeFont                 = "Schriftart anpassen"
+    TT_Cmd_HDDRepair              = "$env:windir\system32\cmd.exe /k chkdsk [Volume] /f /r /x"
+    TT_Cmd_WinRepair              = "$env:windir\system32\cmd.exe /k [sfc /scannow][dism /Online /Cleanup-Image /RestoreHealth]"
 }
 
 $MB_List = @{
@@ -711,6 +715,12 @@ function Insert-Buttons ([HashTable]$Buttons)
                             )}
                         )
                     }
+                ElseIf ($Buttons[$Key].ContainsKey("Tooltip"))
+                    {
+                        New-Variable -Name ("TT_{0}" -f $Key) -Value $Buttons[$Key].Tooltip -Scope Global -Force
+
+                        $ar_Events += @({Add_MouseHover({$Tooltip.SetToolTip($this,(Get-Variable -Name ("TT_{0}" -f $this.Name) -ValueOnly))})})
+                    }
 
                 If ($Buttons[$Key].ContainsKey("ContextMenuStrip"))
                     {
@@ -1012,7 +1022,7 @@ $ChangeColorContextMenuItems = @{
 }
 
 # =============================================================
-# ========== ChangeFontContextMenuItems =================
+# ========== ChangeFontContextMenuItems =======================
 # =============================================================
 
 $ChangeFontContextMenuItems = @{
@@ -1021,6 +1031,43 @@ $ChangeFontContextMenuItems = @{
         Image = "$env:windir\system32\imageres.dll,122"
         Method = [Method]::Extract
         Action = {Add_Click({Change-Font -Title $Txt_List.CMI_a_ButtonFont -Action $ActionButtonFont})}
+    }
+}
+
+# =============================================================
+# ========== HDDRepairContextMenuItems ========================
+# =============================================================
+
+$HDDRepairContextMenuItems = [HashTable]::new()
+
+ForEach($i in Get-PSDrive | Where-Object {$_.Free})
+    {
+        $HDDRepairContextMenuItems += @{
+            $i.Name = @{
+                Text = $Txt_List.CMI_a_HDDRepair -f $i.Name
+                Image = "$env:windir\system32\mycomput.dll,1"
+                Method = [Method]::Extract
+                Action = {Add_Click({Invoke-Expression -Command ("Start-Process -FilePath `"$env:windir\system32\cmd.exe`" -ArgumentList `"/k chkdsk {0}: /f /r /x`"" -f $this.Name)})}
+            }
+        }
+    }
+
+# =============================================================
+# ========== WinRepairContextMenuItems ========================
+# =============================================================
+
+$WinRepairContextMenuItems = @{
+    a_SFC = @{
+        Text = $Txt_List.CMI_a_SFC
+        Image = "$env:windir\system32\mycomput.dll,0"
+        Method = [Method]::Extract
+        Action = {Add_Click({Invoke-Expression -Command ("Start-Process -FilePath `"$env:windir\system32\cmd.exe`" -ArgumentList `"/k sfc /scannow`" -WorkingDirectory `"$env:windir\system32`"")})}
+    }
+    b_DISM = @{
+        Text = $Txt_List.CMI_b_DISM
+        Image = "$env:windir\system32\mycomput.dll,0"
+        Method = [Method]::Extract
+        Action = {Add_Click({Invoke-Expression -Command ("Start-Process -FilePath `"$env:windir\system32\cmd.exe`" -ArgumentList `"/k dism /Online /Cleanup-Image /RestoreHealth`" -WorkingDirectory `"$env:windir\system32`"")})}
     }
 }
 
@@ -1097,6 +1144,34 @@ $ar_Events = @({Items.AddRange(@($ItemRange))})
 Create-Object -Name ChangeFontContextMenu -Type ContextMenuStrip -Data $ht_Data -Events $ar_Events
 
 # =============================================================
+# ========== Insertions: HDDRepairContextMenuItems ============
+# =============================================================
+
+$ItemRange = Insert-ContextMenuItems -ItemList $HDDRepairContextMenuItems
+
+# =============================================================
+# ========== HDDRepairContextMenu =============================
+# =============================================================
+
+$ar_Events = @({Items.AddRange(@($ItemRange))})
+
+Create-Object -Name HDDRepairContextMenu -Type ContextMenuStrip -Data $ht_Data -Events $ar_Events
+
+# =============================================================
+# ========== Insertions: WinRepairContextMenuItems ============
+# =============================================================
+
+$ItemRange = Insert-ContextMenuItems -ItemList $WinRepairContextMenuItems
+
+# =============================================================
+# ========== WinRepairContextMenu =============================
+# =============================================================
+
+$ar_Events = @({Items.AddRange(@($ItemRange))})
+
+Create-Object -Name WinRepairContextMenu -Type ContextMenuStrip -Data $ht_Data -Events $ar_Events
+
+# =============================================================
 # ========== Buttons-List =====================================
 # =============================================================
 
@@ -1130,15 +1205,15 @@ $Buttons_List = @{
         Args = "/k help"
         Dir = "$env:windir\system32"
         }
-    Cmd_chkdsk = @{
+    Cmd_HDDRepair = @{
         Size = $Button.Size
-        Text = $Txt_List.BT_Cmd_chkdsk
+        Text = $Txt_List.BT_Cmd_HDDRepair
         Location = [Panels]::Cmd
         Image = "$env:windir\system32\cmd.exe"
         Method = [Method]::Associate
-        File = "$env:windir\system32\cmd.exe"
-        Args = "/k chkdsk C: /f /r /x"
-        Dir = "$env:windir\system32"
+        ContextMenuStrip = $HDDRepairContextMenu
+        Action = $ActionShowContext
+        Tooltip = $Txt_List.TT_Cmd_HDDRepair
         }
     Cmd_ver = @{
         Size = $Button.Size
@@ -1170,6 +1245,16 @@ $Buttons_List = @{
         Args = "/k ipconfig /flushdns"
         Dir = "$env:windir\system32"
         }
+    Cmd_WinRepair = @{
+        Size = $Button.Size
+        Text = $Txt_List.BT_Cmd_WinRepair
+        Location = [Panels]::Cmd
+        Image = "$env:windir\system32\cmd.exe"
+        Method = [Method]::Associate
+        ContextMenuStrip = $WinRepairContextMenu
+        Action = $ActionShowContext
+        Tooltip = $Txt_List.TT_Cmd_WinRepair
+        }
     DiskManagement = @{
         Size = $Button.Size
         Text = $Txt_List.BT_DiskManagement
@@ -1186,16 +1271,6 @@ $Buttons_List = @{
         Image = "$env:windir\system32\dxdiag.exe"
         Method = [Method]::Associate
         File = "$env:windir\system32\dxdiag.exe"
-        Dir = "$env:windir\system32"
-        }
-    DISM = @{
-        Size = $Button.Size
-        Text = $Txt_List.BT_DISM
-        Location = [Panels]::Cmd
-        Image = "$env:windir\system32\cmd.exe"
-        Method = [Method]::Associate
-        File = "$env:windir\system32\dism.exe"
-        Args = "/Online /Cleanup-Image /RestoreHealth"
         Dir = "$env:windir\system32"
         }
     ImmersiveControlPanel = @{
@@ -1298,16 +1373,6 @@ $Buttons_List = @{
         Method = [Method]::Extract
         File = "$env:windir\system32\perfmon.exe"
         Args = "/rel"
-        Dir = "$env:windir\system32"
-        }
-    SystemFileChecker = @{
-        Size = $Button.Size
-        Text = $Txt_List.BT_SystemFileChecker
-        Location = [Panels]::Cmd
-        Image = "$env:windir\system32\cmd.exe"
-        Method = [Method]::Associate
-        File = "$env:windir\system32\sfc.exe"
-        Args = "/scannow"
         Dir = "$env:windir\system32"
         }
     AppsFolder = @{
