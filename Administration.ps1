@@ -678,48 +678,38 @@ function Insert-Buttons ([HashTable]$Buttons)
                         $ht_Data.ImageAlign = [System.Drawing.ContentAlignment]::MiddleLeft
                     }
 
-                If ($Buttons[$Key].ContainsKey("File"))
+                If ($Buttons[$Key].ContainsKey("File") -and (Test-Path -Path $Buttons[$Key].File))
                     {
-                        If (Test-Path -Path $Buttons[$Key].File)
+                        $CMD = "Start-Process -FilePath `"" + $Buttons[$Key].File + '"'
+                        $TT = $Buttons[$Key].File
+
+                        If ($Buttons[$Key].ContainsKey("Args"))
                             {
-                                $ar_Events += @(
-                                    {Add_Click(
-                                        {
-                                            $MainForm.ActiveControl = $Logo
-
-                                            $Cmd = "Start-Process -FilePath `"" + [string]$Buttons_List[$this.Name].File + '"'
-
-                                            If ($Buttons_List[$this.Name].ContainsKey("Args"))
-                                                {
-                                                    $Cmd += " -ArgumentList `"" + [string]$Buttons_List[$this.Name].Args + '"'
-                                                }
-
-                                            If ($Buttons_List[$this.Name].ContainsKey("Dir"))
-                                                {
-                                                    $Cmd += " -WorkingDirectory `"" + [string]$Buttons_List[$this.Name].Dir + '"'
-                                                }
-
-                                            Invoke-Expression $Cmd
-                                        }
-                                    )}
-                                    {Add_MouseHover(
-                                        {
-                                            $TT = [string]$Buttons_List[$this.Name].File
-
-                                            If ($Buttons_List[$this.Name].ContainsKey("Args"))
-                                                {
-                                                    $TT += [char]32 + [string]$Buttons_List[$this.Name].Args
-                                                }
-
-                                            $Tooltip.SetToolTip($this,$TT)
-                                        }
-                                    )}
-                                )
+                                $CMD += " -ArgumentList `"" + $Buttons[$Key].Args + '"'
+                                $TT += [char]32 + $Buttons[$Key].Args
                             }
-                        Else
+
+                        If ($Buttons[$Key].ContainsKey("Dir"))
                             {
-                                $ht_Data.Enabled = $false
+                                $CMD += " -WorkingDirectory `"" + $Buttons[$Key].Dir + '"'
                             }
+
+                        New-Variable -Name ("CMD_{0}" -f $Key) -Value $CMD -Scope Global -Force
+                        New-Variable -Name ("TT_{0}" -f $Key) -Value $TT -Scope Global -Force
+
+                        $ar_Events += @(
+                            {Add_Click(
+                                {
+                                    $MainForm.ActiveControl = $Logo
+                                    Invoke-Expression -Command (Get-Variable -Name ("CMD_{0}" -f $this.Name) -ValueOnly)
+                                }
+                            )}
+                            {Add_MouseHover(
+                                {
+                                    $Tooltip.SetToolTip($this,(Get-Variable -Name ("TT_{0}" -f $this.Name) -ValueOnly))
+                                }
+                            )}
+                        )
                     }
 
                 If ($Buttons[$Key].ContainsKey("ContextMenuStrip"))
