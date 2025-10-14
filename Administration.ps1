@@ -845,6 +845,8 @@ $ActionPanelBackColor = {
 
 $ActionShowContext = {
     Add_Click({
+        $MainForm.ActiveControl = $Logo
+
         If ($_.Button -eq [System.Windows.Forms.MouseButtons]::Left)
             {
                 $Point = [System.Drawing.Point]::new([System.Windows.Forms.Cursor]::Position.X, [System.Windows.Forms.Cursor]::Position.Y)
