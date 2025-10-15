@@ -532,8 +532,8 @@ function Change-Font ([string]$Title, [ScriptBlock]$Action)
                 }
 
                 $ar_Events = @(
-                    {Add_MouseEnter({$this.Font = New-Object -TypeName System.Drawing.Font($this.Font.Name, $Font.Size, [System.Drawing.FontStyle]::Underline)})}
-                    {Add_MouseLeave({$this.Font = New-Object -TypeName System.Drawing.Font($this.Font.Name, $Font.Size, [System.Drawing.FontStyle]::Regular)})}
+                    {Add_MouseEnter({$this.Font = New-Object -TypeName System.Drawing.Font($this.Font.Name, $this.Font.Size, [System.Drawing.FontStyle]::Underline)})}
+                    {Add_MouseLeave({$this.Font = New-Object -TypeName System.Drawing.Font($this.Font.Name, $this.Font.Size, [System.Drawing.FontStyle]::Regular)})}
                     {Add_MouseHover({$Tooltip.SetToolTip($this,$this.Font.Name)})}
                     $Action
                 )
@@ -1658,12 +1658,12 @@ $ar_Events = @(
     )}
     {Add_MouseEnter(
         {
-            $this.Font = New-Object -TypeName System.Drawing.Font($Fonts[$Font.Index].Name, $Font.Size, [System.Drawing.FontStyle]::Underline)
+            $this.Font = New-Object -TypeName System.Drawing.Font($this.Font.Name, $this.Font.Size, [System.Drawing.FontStyle]::Underline)
         }
     )}
     {Add_MouseLeave(
         {
-            $this.Font = New-Object -TypeName System.Drawing.Font($Fonts[$Font.Index].Name, $Font.Size, [System.Drawing.FontStyle]::Regular)
+            $this.Font = New-Object -TypeName System.Drawing.Font($this.Font.Name, $this.Font.Size, [System.Drawing.FontStyle]::Regular)
         }
     )}
 )
