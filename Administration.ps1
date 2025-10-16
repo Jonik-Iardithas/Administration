@@ -625,10 +625,8 @@ function Insert-Panels ([array]$Panels, [object]$Template)
         ForEach ($Item in $Panels | Sort-Object)
             {
                 $ht_Data = @{
-                    Width = $Template.Width
-                    Height = $Template.Height
-                    Left = $Template.Left
-                    Top = $Template.Top
+                    Location = $Template.Location
+                    Size = $Template.Size
                     BorderStyle = [System.Windows.Forms.BorderStyle]::Fixed3D
                     BackColor = [System.Drawing.Color]::FromArgb([int]$Ini.PanelBackColor)
                     Name = $Item
@@ -1617,11 +1615,9 @@ Create-Object -Name MainForm -Type Form -Data $ht_Data -Events $ar_Events
 
 $ht_Data = @{
     ImageLocation = $Ini.IconFolder + "Icon_Logo.png"
-    Width = $Rects.A.Width
-    Height = $Rects.A.Height
+    Location = $Rects.A.Location
+    Size = $Rects.A.Size
     SizeMode = [System.Windows.Forms.PictureBoxSizeMode]::Normal
-    Left = $Rects.A.Left
-    Top = $Rects.A.Top
     Name = "Logo"
     BorderStyle = [System.Windows.Forms.BorderStyle]::Fixed3D
     BackgroundImage = [System.Drawing.Image]::FromFile($Ini.IconFolder + $Ini.LogoBackground)
@@ -1636,10 +1632,8 @@ Create-Object -Name Logo -Type PictureBox -Data $ht_Data -Control MainForm
 # =============================================================
 
 $ht_Data = @{
-    Width = $Rects.C.Width
-    Height = $Rects.C.Height
-    Left = $Rects.C.Left
-    Top = $Rects.C.Top
+    Location = $Rects.C.Location
+    Size = $Rects.C.Size
     Font = New-Object -TypeName System.Drawing.Font($Fonts[$Font.Index].Name, $Font.Size, $Font.Style)
     Text = $Txt_List.Settings
     Name = [Panels]::Settings
@@ -1675,9 +1669,8 @@ Create-Object -Name Settings -Type Label -Data $ht_Data -Events $ar_Events -Cont
 # =============================================================
 
 $ht_Data = @{
-    Left = $Rects.B.Left
-    Top = $Rects.B.Top
-    ClientSize = $Rects.B.Size
+    Location = $Rects.B.Location
+    Size = $Rects.B.Size
     Text = $Txt_List.GB
 }
 
