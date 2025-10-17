@@ -723,20 +723,31 @@ function Insert-Buttons ([HashTable]$Buttons)
                 If ($Buttons[$Key].ContainsKey("ContextMenuStrip"))
                     {
                         $ht_Data.ContextMenuStrip = $Buttons[$Key].ContextMenuStrip
-                    }
 
-                If ($Buttons[$Key].ContainsKey("Action"))
-                    {
-                        $ar_Events += @($Buttons[$Key].Action)
+                        $ar_Events += @(
+                            {Add_Click(
+                                {
+                                    $MainForm.ActiveControl = $Logo
+
+                                    If ($_.Button -eq [System.Windows.Forms.MouseButtons]::Left)
+                                        {
+                                            $Point = [System.Drawing.Point]::new([System.Windows.Forms.Cursor]::Position.X, [System.Windows.Forms.Cursor]::Position.Y)
+                                            $this.ContextMenuStrip.Show($this, $this.PointToClient($Point))
+                                        }
+                                }
+                            )}
+                        )
                     }
 
                 If ($Buttons[$Key].ContainsKey("Location"))
                     {
                         $Panel = $MainForm.Controls | Where-Object {$_.GetType().Name -eq "Panel" -and $_.Name -eq $Buttons[$Key].Location}
                         $Count = ($Panel.Controls | Where-Object {$_.GetType().Name -eq "Button"}).Count
-                        $ht_Data.Left = $Padding.Width
-                        $ht_Data.Top = $Count * ($Button.Size.Height + 5) + $Padding.Height
+                        $ht_Data.Location = [System.Drawing.Point]::new($Padding.Width,($Padding.Height + $Count * ($Button.Size.Height + 5)))
+                    }
 
+                If ($ht_Data.ContainsKey("Location") -and $ht_Data.ContainsKey("Size") -and $ht_Data.ContainsKey("Text"))
+                    {
                         Create-Object -Name ("BT_{0}" -f $Key) -Type Button -Data $ht_Data -Events $ar_Events -Control ("PN_{0}" -f $Buttons[$Key].Location)
                     }
             }
@@ -838,18 +849,6 @@ $ActionPanelBackColor = {
         $Ini.PanelBackColor = $this.BackColor.ToArgb()
         Synchronize-Me -Table $Ini -Path $SettingsFile
         $this.Parent.Close()
-    })
-}
-
-$ActionShowContext = {
-    Add_Click({
-        $MainForm.ActiveControl = $Logo
-
-        If ($_.Button -eq [System.Windows.Forms.MouseButtons]::Left)
-            {
-                $Point = [System.Drawing.Point]::new([System.Windows.Forms.Cursor]::Position.X, [System.Windows.Forms.Cursor]::Position.Y)
-                $this.ContextMenuStrip.Show($this, $this.PointToClient($Point))
-            }
     })
 }
 
@@ -1212,7 +1211,6 @@ $Buttons_List = @{
         Image = "$env:windir\system32\cmd.exe"
         Method = [Method]::Associate
         ContextMenuStrip = $HDDRepairContextMenu
-        Action = $ActionShowContext
         Tooltip = $Txt_List.TT_Cmd_HDDRepair
         }
     Cmd_ver = @{
@@ -1252,7 +1250,6 @@ $Buttons_List = @{
         Image = "$env:windir\system32\cmd.exe"
         Method = [Method]::Associate
         ContextMenuStrip = $WinRepairContextMenu
-        Action = $ActionShowContext
         Tooltip = $Txt_List.TT_Cmd_WinRepair
         }
     DiskManagement = @{
@@ -1537,7 +1534,6 @@ $Buttons_List = @{
         Image = "$env:windir\system32\colorcpl.exe"
         Method = [Method]::Associate
         ContextMenuStrip = $ChangeColorContextMenu
-        Action = $ActionShowContext
         }
     ChangeBackground = @{
         Size = $Button.Size
@@ -1546,7 +1542,6 @@ $Buttons_List = @{
         Image = "$env:windir\system32\imageres.dll,67"
         Method = [Method]::Extract
         ContextMenuStrip = $ChangeBackgroundContextMenu
-        Action = $ActionShowContext
         }
     ChangeBehavior = @{
         Size = $Button.Size
@@ -1555,7 +1550,6 @@ $Buttons_List = @{
         Image = "$env:windir\system32\imageres.dll,63"
         Method = [Method]::Extract
         ContextMenuStrip = $ChangeBehaviorContextMenu
-        Action = $ActionShowContext
         }
     ChangeFont = @{
         Size = $Button.Size
@@ -1564,7 +1558,6 @@ $Buttons_List = @{
         Image = "$env:windir\system32\imageres.dll,118"
         Method = [Method]::Extract
         ContextMenuStrip = $ChangeFontContextMenu
-        Action = $ActionShowContext
         }
 }
 
