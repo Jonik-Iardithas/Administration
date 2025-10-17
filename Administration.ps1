@@ -1274,10 +1274,10 @@ $Buttons_List = @{
         Size = $Button.Size
         Text = $Txt_List.BT_ImmersiveControlPanel
         Location = [Panels]::UWP
-        Image = "$env:windir\system32\shell32.dll,316"
-        Method = [Method]::Extract
+        Image = (Get-AppxPackage -Name "*immersivecontrolpanel*" | Select-Object -ExpandProperty InstallLocation -First 1) + "\SystemSettings.exe"
+        Method = [Method]::Associate
         File = "$env:windir\explorer.exe"
-        Args = "shell:AppsFolder\" + (Get-StartApps -Name "Einstellungen" | Select-Object -ExpandProperty AppID)
+        Args = "shell:AppsFolder\" + (Get-StartApps -Name "*Einstellungen*" | Select-Object -ExpandProperty AppID -First 1)
         }
     PowerConfiguration = @{
         Size = $Button.Size
@@ -1320,19 +1320,19 @@ $Buttons_List = @{
         Size = $Button.Size
         Text = $Txt_List.BT_NvidiaControlPanel
         Location = [Panels]::UWP
-        Image = (Get-AppxPackage -Name "NVIDIA*" | Select-Object -ExpandProperty InstallLocation) + "\nvcplui.exe"
+        Image = (Get-AppxPackage -Name "*NVIDIAControlPanel*" | Select-Object -ExpandProperty InstallLocation -First 1) + "\nvcplui.exe"
         Method = [Method]::Associate
         File = "$env:windir\explorer.exe"
-        Args = "shell:AppsFolder\" + (Get-StartApps -Name "NVIDIA*" | Select-Object -ExpandProperty AppID)
+        Args = "shell:AppsFolder\" + (Get-StartApps -Name "*NVIDIA Control Panel*" | Select-Object -ExpandProperty AppID -First 1)
         }
     RealtekAudioConsole = @{
         Size = $Button.Size
         Text = $Txt_List.BT_RealtekAudioConsole
         Location = [Panels]::UWP
-        Image = Get-ChildItem -Path ((Get-AppxPackage -Name "Realtek*" | Select-Object -ExpandProperty InstallLocation) + "\Assets\") -Filter "*.png" -File | Select-Object -ExpandProperty FullName -First 1
+        Image = Get-ChildItem -Path ((Get-AppxPackage -Name "*RealtekAudioControl*" | Select-Object -ExpandProperty InstallLocation -First 1) + "\Assets\") -Filter "*.png" -File | Select-Object -ExpandProperty FullName -First 1
         Method = [Method]::Image
         File = "$env:windir\explorer.exe"
-        Args = "shell:AppsFolder\" + (Get-StartApps -Name "Realtek*" | Select-Object -ExpandProperty AppID)
+        Args = "shell:AppsFolder\" + (Get-StartApps -Name "*Realtek Audio Console*" | Select-Object -ExpandProperty AppID -First 1)
         }
     RegistryEditor = @{
         Size = $Button.Size
