@@ -312,7 +312,16 @@ function Get-Image ([string]$Path, [string]$Method, [object]$Size)
                 ElseIf ($Method -eq [Method]::Extract -and $Path.Contains(","))
                     {
                         [Win32Functions.WinAPI]::ExtractIconEx($Path.Split(",")[0], $Path.Split(",")[-1], [ref]$L_Ptr, [ref]$S_Ptr, 1) | Out-Null
-                        $Image = ([System.Drawing.Icon]::FromHandle($S_Ptr)).Clone()
+
+                        If ($Size.Width -le 20 -and $Size.Height -le 20)
+                            {
+                                $Image = ([System.Drawing.Icon]::FromHandle($S_Ptr)).Clone()
+                            }
+                        Else
+                            {
+                                $Image = ([System.Drawing.Icon]::FromHandle($L_Ptr)).Clone()
+                            }
+
                         [Win32Functions.WinApi]::DestroyIcon($L_Ptr) | Out-Null
                         [Win32Functions.WinApi]::DestroyIcon($S_Ptr) | Out-Null
                     }
