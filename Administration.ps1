@@ -10,7 +10,7 @@ If (!([System.Security.Principal.WindowsPrincipal][System.Security.Principal.Win
 
 [System.Reflection.Assembly]::LoadWithPartialName("System.Windows.Forms") | Out-Null
 [System.Reflection.Assembly]::LoadWithPartialName("System.Drawing") | Out-Null
-[System.Reflection.Assembly]::LoadWithPartialName('WindowsFormsIntegration') | Out-Null
+[System.Reflection.Assembly]::LoadWithPartialName("WindowsFormsIntegration") | Out-Null
 [System.Windows.Forms.Application]::EnableVisualStyles()
 
 # =============================================================
@@ -19,8 +19,6 @@ If (!([System.Security.Principal.WindowsPrincipal][System.Security.Principal.Win
 
 $Margin = [System.Drawing.Size]::new(10,10)
 $Padding = [System.Drawing.Size]::new(10,10)
-$L_Ptr = [System.IntPtr]::new(0)
-$S_Ptr = [System.IntPtr]::new(0)
 $SettingsFile = "$env:LOCALAPPDATA\PowerShellTools\Administration\Settings.ini"
 $Fonts = [System.Drawing.FontFamily]::Families
 $Global:AppContext = New-Object System.Windows.Forms.ApplicationContext
@@ -78,13 +76,15 @@ $Ini_Bak = @{
     ButtonForeColor = -16777216
     ButtonHoverColor = -329006
     FontName = "Verdana"
+    FontSize = 8
     FormBackColor = -7876870
-    IconFolder = "$env:ProgramFiles\PowerShellTools\Administration\Icons\"
+    IconFolder = "$PSScriptRoot\Icons\"
     LogoBackColor = -7876870
     LogoBackground = "Logo_Back0.png"
     PanelBackColor = -7876870
     PanelBackground = "Panel_Back0.png"
     SysTray = 1
+    TopMost = 1
 }
 
 $Txt_List = @{
@@ -103,9 +103,12 @@ $Txt_List = @{
     CMI_g_BorderColor             = "Tasten-Rahmenfarbe"
     CMI_a_LogoBack                = "Logo-Hintergrund"
     CMI_b_PanelBack               = "Panel-Hintergrund"
-    CMI_a_SysTray                 = "Schließen in den Infobereich"
-    CMI_b_Autostart               = "Autostart bei Anmeldung"
+    CMI_a_TopMost                 = "Immer im Vordergrund"
+    CMI_b_SysTray                 = "Schließen in den Infobereich"
+    CMI_c_Autostart               = "Autostart bei Anmeldung"
     CMI_a_ButtonFont              = "Tasten-Schriftart"
+    CMI_b_ButtonFontPlus          = "Tasten-Schriftgröße +"
+    CMI_c_ButtonFontMinus         = "Tasten-Schriftgröße -"
     CMI_a_HDDRepair               = "Laufwerk {0}:"
     CMI_a_SFC                     = "System File Checker (sfc.exe)"
     CMI_b_DISM                    = "Deployment Imaging Servicing and Management (dism.exe)"
@@ -227,7 +230,10 @@ function Initialize-Me ([string]$FilePath)
 
         ForEach ($i in $Data)
             {
-                $ht_Result += @{$i.Split("=")[0].Trim() = $i.Split("=")[-1].Trim()}
+                If ($i.Contains("="))
+                    {
+                        $ht_Result += @{$i.Split("=")[0].Trim() = $i.Split("=")[-1].Trim()}
+                    }
             }
 
         return $ht_Result
@@ -252,7 +258,7 @@ function Register-Autostart ([string]$Name, [string]$Path, [bool]$Active)
 
                 $Task = Get-ScheduledTask -TaskName $Name
                 $Task.Triggers[0].Delay = "PT5S"
-                Set-ScheduledTask $Task | Out-Null
+                Set-ScheduledTask -InputObject $Task | Out-Null
             }
 
         If ($Active)
@@ -372,7 +378,7 @@ function Change-Background ([string]$Title, [string]$Path, [string]$SearchMask, 
             {Add_FormClosing(
                 {
                     $this.TopMost = $false
-                    $MainForm.TopMost = $true
+                    $MainForm.TopMost = [bool][int]$Ini.TopMost
                 }
             )}
         )
@@ -436,7 +442,7 @@ function Change-Color ([string]$Title, [ScriptBlock]$Action)
             {Add_FormClosing(
                 {
                     $this.TopMost = $false
-                    $MainForm.TopMost = $true
+                    $MainForm.TopMost = [bool][int]$Ini.TopMost
                 }
             )}
         )
@@ -502,7 +508,7 @@ function Change-Font ([string]$Title, [ScriptBlock]$Action)
             {Add_FormClosing(
                 {
                     $this.TopMost = $false
-                    $MainForm.TopMost = $true
+                    $MainForm.TopMost = [bool][int]$Ini.TopMost
                 }
             )}
         )
@@ -581,14 +587,9 @@ function Insert-ContextMenuItems ([HashTable]$ItemList)
                         $ar_Events += @($ItemList[$Key].Action)
                     }
 
-                Create-Object -Name ("CMI_{0}" -f $Key) -Type ToolStripMenuItem -Data $ht_Data -Events $ar_Events
+                Create-Object -Name ('CMI_{0}' -f $Key) -Type ToolStripMenuItem -Data $ht_Data -Events $ar_Events
 
-                If ($ItemList[$Key].ContainsKey("Extra"))
-                    {
-                        Invoke-Expression -Command ("`$CMI_{0} | Add-Member -MemberType NoteProperty -Name Extra -Value `$ItemList[`$Key].Extra -Force" -f $Key)
-                    }
-
-                Invoke-Expression -Command ("`$ItemRange += `$CMI_{0}" -f $Key)
+                Invoke-Expression -Command ('$ItemRange += $CMI_{0}' -f $Key)
             }
 
         return $ItemRange
@@ -621,9 +622,9 @@ function Insert-RadioButtons ([array]$Radios, [object]$Template)
                     )}
                 )
 
-                Create-Object -Name ("RB_{0}" -f $Item) -Type RadioButton -Data $ht_Data -Events $ar_Events -Control MainForm
+                Create-Object -Name ('RB_{0}' -f $Item) -Type RadioButton -Data $ht_Data -Events $ar_Events -Control MainForm
 
-                Invoke-Expression -Command ("`$RB_$Item.BringToFront()")
+                Invoke-Expression -Command ('$RB_{0}.BringToFront()' -f $Item)
             }
     }
 
@@ -644,11 +645,11 @@ function Insert-Panels ([array]$Panels, [object]$Template)
                     BackgroundImageLayout = [System.Windows.Forms.ImageLayout]::Stretch
                 }
 
-                Create-Object -Name ("PN_{0}" -f $Item) -Type Panel -Data $ht_Data -Control MainForm
+                Create-Object -Name ('PN_{0}' -f $Item) -Type Panel -Data $ht_Data -Control MainForm
 
                 If ($Item -ne [Panels]::Start)
                     {
-                        Invoke-Expression -Command ("`$PN_$Item.Hide()")
+                        Invoke-Expression -Command ('$PN_{0}.Hide()' -f $Item)
                     }
             }
     }
@@ -661,7 +662,7 @@ function Insert-Buttons ([HashTable]$Buttons)
             {
                 $ht_Data = @{
                     Name = $Key
-                    Font = New-Object -TypeName System.Drawing.Font($Ini.FontName, $Font.Size, $Font.Style)
+                    Font = New-Object -TypeName System.Drawing.Font($Ini.FontName, [int]$Ini.FontSize, $Font.Style)
                     TextAlign = [System.Drawing.ContentAlignment]::MiddleCenter
                     FlatStyle = [System.Windows.Forms.FlatStyle]::Flat
                     ForeColor = [System.Drawing.Color]::FromArgb([int]$Ini.ButtonForeColor)
@@ -691,42 +692,42 @@ function Insert-Buttons ([HashTable]$Buttons)
 
                 If ($Buttons[$Key].ContainsKey("File") -and (Test-Path -Path $Buttons[$Key].File))
                     {
-                        $CMD = "Start-Process -FilePath `"" + $Buttons[$Key].File + '"'
+                        $CMD = 'Start-Process -FilePath "' + $Buttons[$Key].File + '"'
                         $TT = $Buttons[$Key].File
 
                         If ($Buttons[$Key].ContainsKey("Args"))
                             {
-                                $CMD += " -ArgumentList `"" + $Buttons[$Key].Args + '"'
+                                $CMD += ' -ArgumentList "' + $Buttons[$Key].Args + '"'
                                 $TT += [char]32 + $Buttons[$Key].Args
                             }
 
                         If ($Buttons[$Key].ContainsKey("Dir"))
                             {
-                                $CMD += " -WorkingDirectory `"" + $Buttons[$Key].Dir + '"'
+                                $CMD += ' -WorkingDirectory "' + $Buttons[$Key].Dir + '"'
                             }
 
-                        New-Variable -Name ("CMD_{0}" -f $Key) -Value $CMD -Scope Global -Force
-                        New-Variable -Name ("TT_{0}" -f $Key) -Value $TT -Scope Global -Force
+                        New-Variable -Name ('CMD_{0}' -f $Key) -Value $CMD -Scope Global -Force
+                        New-Variable -Name ('TT_{0}' -f $Key) -Value $TT -Scope Global -Force
 
                         $ar_Events += @(
                             {Add_Click(
                                 {
                                     $MainForm.ActiveControl = $Logo
-                                    Invoke-Expression -Command (Get-Variable -Name ("CMD_{0}" -f $this.Name) -ValueOnly)
+                                    Invoke-Expression -Command (Get-Variable -Name ('CMD_{0}' -f $this.Name) -ValueOnly)
                                 }
                             )}
                             {Add_MouseHover(
                                 {
-                                    $Tooltip.SetToolTip($this,(Get-Variable -Name ("TT_{0}" -f $this.Name) -ValueOnly))
+                                    $Tooltip.SetToolTip($this,(Get-Variable -Name ('TT_{0}' -f $this.Name) -ValueOnly))
                                 }
                             )}
                         )
                     }
                 ElseIf ($Buttons[$Key].ContainsKey("Tooltip"))
                     {
-                        New-Variable -Name ("TT_{0}" -f $Key) -Value $Buttons[$Key].Tooltip -Scope Global -Force
+                        New-Variable -Name ('TT_{0}' -f $Key) -Value $Buttons[$Key].Tooltip -Scope Global -Force
 
-                        $ar_Events += @({Add_MouseHover({$Tooltip.SetToolTip($this,(Get-Variable -Name ("TT_{0}" -f $this.Name) -ValueOnly))})})
+                        $ar_Events += @({Add_MouseHover({$Tooltip.SetToolTip($this,(Get-Variable -Name ('TT_{0}' -f $this.Name) -ValueOnly))})})
                     }
 
                 If ($Buttons[$Key].ContainsKey("ContextMenuStrip"))
@@ -757,7 +758,7 @@ function Insert-Buttons ([HashTable]$Buttons)
 
                 If ($ht_Data.ContainsKey("Location") -and $ht_Data.ContainsKey("Size") -and $ht_Data.ContainsKey("Text"))
                     {
-                        Create-Object -Name ("BT_{0}" -f $Key) -Type Button -Data $ht_Data -Events $ar_Events -Control ("PN_{0}" -f $Buttons[$Key].Location)
+                        Create-Object -Name ('BT_{0}' -f $Key) -Type Button -Data $ht_Data -Events $ar_Events -Control ('PN_{0}' -f $Buttons[$Key].Location)
                     }
             }
     }
@@ -836,7 +837,7 @@ $ActionButtonBorderColor = {
 $ActionButtonFont = {
     Add_Click({
         $Panels = $MainForm.Controls | Where-Object {$_.GetType().Name -eq 'Panel'}
-        $Panels.Controls | Where-Object {$_.GetType().Name -eq 'Button'} | ForEach-Object {$_.Font = New-Object -TypeName System.Drawing.Font($this.Font.Name, $Font.Size, $Font.Style)}
+        $Panels.Controls | Where-Object {$_.GetType().Name -eq 'Button'} | ForEach-Object {$_.Font = New-Object -TypeName System.Drawing.Font($this.Font.Name, [int]$Ini.FontSize, $Font.Style)}
         $Ini.FontName = $this.Font.Name
         Synchronize-Me -Table $Ini -Path $SettingsFile
         $this.Parent.Close()
@@ -913,14 +914,35 @@ $SysTrayContextMenuItems = @{
 # =============================================================
 
 $ChangeBehaviorContextMenuItems = @{
-    a_SysTray = @{
-        Text = $Txt_List.CMI_a_SysTray
-        Image = If ([bool][int]$Ini.SysTray) {"$env:windir\system32\imageres.dll,232"} Else {"$env:windir\system32\imageres.dll,229"}
+    a_TopMost = @{
+        Text = $Txt_List.CMI_a_TopMost
+        Image = If ([bool][int]$Ini.TopMost) {"$env:windir\system32\imageres.dll,232"} Else {"$env:windir\system32\imageres.dll,229"}
         Method = [Method]::Extract
-        Extra = If ([bool][int]$Ini.SysTray) {$true} Else {$false}
         Action = {Add_Click(
             {
-                If ($this.Extra)
+                If ([bool][int]$Ini.TopMost)
+                    {
+                        $this.Image = Get-Image -Path "$env:windir\system32\imageres.dll,229" -Method ([Method]::Extract) -Size $CMI.IconSize
+                        $MainForm.TopMost = $false
+                    }
+                Else
+                    {
+                        $this.Image = Get-Image -Path "$env:windir\system32\imageres.dll,232" -Method ([Method]::Extract) -Size $CMI.IconSize
+                        $MainForm.TopMost = $true
+                    }
+
+                $Ini.TopMost = [int]$Ini.TopMost -bxor 1
+                Synchronize-Me -Table $Ini -Path $SettingsFile
+            }
+        )}
+    }
+    b_SysTray = @{
+        Text = $Txt_List.CMI_b_SysTray
+        Image = If ([bool][int]$Ini.SysTray) {"$env:windir\system32\imageres.dll,232"} Else {"$env:windir\system32\imageres.dll,229"}
+        Method = [Method]::Extract
+        Action = {Add_Click(
+            {
+                If ([bool][int]$Ini.SysTray)
                     {
                         $this.Image = Get-Image -Path "$env:windir\system32\imageres.dll,229" -Method ([Method]::Extract) -Size $CMI.IconSize
                     }
@@ -929,20 +951,18 @@ $ChangeBehaviorContextMenuItems = @{
                         $this.Image = Get-Image -Path "$env:windir\system32\imageres.dll,232" -Method ([Method]::Extract) -Size $CMI.IconSize
                     }
 
-                $this.Extra = !($this.Extra)
-                $Ini.SysTray = [int]$this.Extra
+                $Ini.SysTray = [int]$Ini.SysTray -bxor 1
                 Synchronize-Me -Table $Ini -Path $SettingsFile
             }
         )}
     }
-    b_Autostart = @{
-        Text = $Txt_List.CMI_b_Autostart
+    c_Autostart = @{
+        Text = $Txt_List.CMI_c_Autostart
         Image = If ([bool][int]$Ini.Autostart) {"$env:windir\system32\imageres.dll,232"} Else {"$env:windir\system32\imageres.dll,229"}
         Method = [Method]::Extract
-        Extra = If ([bool][int]$Ini.Autostart) {$true} Else {$false}
         Action = {Add_Click(
             {
-                If ($this.Extra)
+                If ([bool][int]$Ini.Autostart)
                     {
                         $this.Image = Get-Image -Path "$env:windir\system32\imageres.dll,229" -Method ([Method]::Extract) -Size $CMI.IconSize
                         Disable-ScheduledTask -TaskName 'Administration' | Out-Null
@@ -953,8 +973,7 @@ $ChangeBehaviorContextMenuItems = @{
                         Enable-ScheduledTask -TaskName 'Administration' | Out-Null
                     }
 
-                $this.Extra = !($this.Extra)
-                $Ini.Autostart = [int]$this.Extra
+                $Ini.Autostart = [int]$Ini.Autostart -bxor 1
                 Synchronize-Me -Table $Ini -Path $SettingsFile
             }
         )}
@@ -1040,6 +1059,42 @@ $ChangeFontContextMenuItems = @{
         Method = [Method]::Extract
         Action = {Add_Click({Change-Font -Title $Txt_List.CMI_a_ButtonFont -Action $ActionButtonFont})}
     }
+    b_ButtonFontPlus = @{
+        Text = $Txt_List.CMI_b_ButtonFontPlus
+        Image = "$env:windir\system32\imageres.dll,122"
+        Method = [Method]::Extract
+        Action = {Add_Click(
+            {
+                If ([int]$Ini.FontSize + 1 -in (6..12))
+                    {
+                        $Panels = $MainForm.Controls | Where-Object {$_.GetType().Name -eq 'Panel'}
+                        $Panels.Controls | Where-Object {$_.GetType().Name -eq 'Button'} | ForEach-Object {$_.Font = New-Object -TypeName System.Drawing.Font($_.Font.Name, ($_.Font.Size + 1), $_.Font.Style)}
+                        $Ini.FontSize = [int]$Ini.FontSize + 1
+                        Synchronize-Me -Table $Ini -Path $SettingsFile
+                        $this.Enabled = $Ini.FontSize -lt 12
+                        $this.Owner.GetNextItem($this,[System.Windows.Forms.ArrowDirection]::Down).Enabled = $true
+                    }
+            }
+        )}
+    }
+    c_ButtonFontMinus = @{
+        Text = $Txt_List.CMI_c_ButtonFontMinus
+        Image = "$env:windir\system32\imageres.dll,122"
+        Method = [Method]::Extract
+        Action = {Add_Click(
+            {
+                If ([int]$Ini.FontSize - 1 -in (6..12))
+                    {
+                        $Panels = $MainForm.Controls | Where-Object {$_.GetType().Name -eq 'Panel'}
+                        $Panels.Controls | Where-Object {$_.GetType().Name -eq 'Button'} | ForEach-Object {$_.Font = New-Object -TypeName System.Drawing.Font($_.Font.Name, ($_.Font.Size - 1), $_.Font.Style)}
+                        $Ini.FontSize = [int]$Ini.FontSize - 1
+                        Synchronize-Me -Table $Ini -Path $SettingsFile
+                        $this.Enabled = $Ini.FontSize -gt 6
+                        $this.Owner.GetNextItem($this,[System.Windows.Forms.ArrowDirection]::Up).Enabled = $true
+                    }
+            }
+        )}
+    }
 }
 
 # =============================================================
@@ -1055,7 +1110,7 @@ ForEach($i in Get-PSDrive | Where-Object {$_.Free})
                 Text = $Txt_List.CMI_a_HDDRepair -f $i.Name
                 Image = "$env:windir\system32\mycomput.dll,1"
                 Method = [Method]::Extract
-                Action = {Add_Click({Invoke-Expression -Command ("Start-Process -FilePath `"$env:windir\system32\cmd.exe`" -ArgumentList `"/k chkdsk {0}: /f /r /x`"" -f $this.Name)})}
+                Action = {Add_Click({Invoke-Expression -Command ('Start-Process -FilePath "{0}\system32\cmd.exe" -ArgumentList "/k chkdsk {1}: /f /r /x"' -f $env:windir, $this.Name)})}
             }
         }
     }
@@ -1069,13 +1124,13 @@ $WinRepairContextMenuItems = @{
         Text = $Txt_List.CMI_a_SFC
         Image = "$env:windir\system32\mycomput.dll,0"
         Method = [Method]::Extract
-        Action = {Add_Click({Invoke-Expression -Command ("Start-Process -FilePath `"$env:windir\system32\cmd.exe`" -ArgumentList `"/k sfc /scannow`" -WorkingDirectory `"$env:windir\system32`"")})}
+        Action = {Add_Click({Invoke-Expression -Command ('Start-Process -FilePath "{0}\system32\cmd.exe" -ArgumentList "/k sfc /scannow" -WorkingDirectory "{0}\system32"' -f $env:windir)})}
     }
     b_DISM = @{
         Text = $Txt_List.CMI_b_DISM
         Image = "$env:windir\system32\mycomput.dll,0"
         Method = [Method]::Extract
-        Action = {Add_Click({Invoke-Expression -Command ("Start-Process -FilePath `"$env:windir\system32\cmd.exe`" -ArgumentList `"/k dism /Online /Cleanup-Image /RestoreHealth`" -WorkingDirectory `"$env:windir\system32`"")})}
+        Action = {Add_Click({Invoke-Expression -Command ('Start-Process -FilePath "{0}\system32\cmd.exe" -ArgumentList "/k dism /Online /Cleanup-Image /RestoreHealth" -WorkingDirectory "{0}\system32"' -f $env:windir)})}
     }
 }
 
@@ -1581,7 +1636,6 @@ $ht_Data = @{
     Text = $Txt_List.MainForm
     BackColor = [System.Drawing.Color]::FromArgb([int]$Ini.FormBackColor)
     FormBorderStyle = [System.Windows.Forms.FormBorderStyle]::FixedSingle
-    TopMost = $true
     MaximizeBox = $false
 }
 
@@ -1589,6 +1643,7 @@ $ar_Events = @(
     {Add_Load(
         {
             $this.ActiveControl = $Logo
+            $this.TopMost = [bool][int]$Ini.TopMost
             $SysIcon.Visible = $false
             [Win32Functions.WinAPI]::ShowWindowAsync($this.Handle, 1)
         }
@@ -1693,7 +1748,7 @@ $ar_Events = @(
         {
             If ($_.Button -eq [System.Windows.Forms.MouseButtons]::Left)
                 {
-                    $this.GetType().GetMethod("ShowContextMenu",[System.Reflection.BindingFlags]::Instance -bor [System.Reflection.BindingFlags]::NonPublic).Invoke($this,$null)
+                    $this.GetType().GetMethod("ShowContextMenu",[System.Reflection.BindingFlags]::Instance + [System.Reflection.BindingFlags]::NonPublic).Invoke($this,$null)
                 }
         }
     )}

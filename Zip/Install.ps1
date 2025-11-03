@@ -41,6 +41,7 @@ $Global:Content = @(
     "ButtonForeColor = -16777216"
     "ButtonHoverColor = -329006"
     "FontName = Verdana"
+    "FontSize = 8"
     "FormBackColor = -7876870"
     "IconFolder = $Global:Path\Icons\"
     "LogoBackColor = -7876870"
@@ -48,6 +49,7 @@ $Global:Content = @(
     "PanelBackColor = -7876870"
     "PanelBackground = Panel_Back0.png"
     "SysTray = 1"
+    "TopMost = 1"
 )
 
 $Txt_List = @{
@@ -383,6 +385,7 @@ $ar_Events = @(
                         "ButtonForeColor = -16777216"
                         "ButtonHoverColor = -329006"
                         "FontName = Verdana"
+                        "FontSize = 8"
                         "FormBackColor = -7876870"
                         "IconFolder = $Global:Path\Icons\"
                         "LogoBackColor = -7876870"
@@ -390,6 +393,7 @@ $ar_Events = @(
                         "PanelBackColor = -7876870"
                         "PanelBackground = Panel_Back0.png"
                         "SysTray = 1"
+                        "TopMost = 1"
                     )
                 }
         }
