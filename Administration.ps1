@@ -21,7 +21,10 @@ $Margin = [System.Drawing.Size]::new(10,10)
 $Padding = [System.Drawing.Size]::new(10,10)
 $SettingsFile = "$env:LOCALAPPDATA\PowerShellTools\Administration\Settings.ini"
 $Fonts = [System.Drawing.FontFamily]::Families
+$Restart = "$env:LOCALAPPDATA\PowerShellTools\Administration\Restart.lnk"
+$Profiles = "$env:LOCALAPPDATA\PowerShellTools\Administration\Profiles"
 $Global:AppContext = New-Object System.Windows.Forms.ApplicationContext
+$Global:Me = $PSCommandPath
 
 $Layout = @{
     L = @{
@@ -112,6 +115,9 @@ $Txt_List = @{
     CMI_a_HDDRepair               = "Laufwerk {0}:"
     CMI_a_SFC                     = "System File Checker (sfc.exe)"
     CMI_b_DISM                    = "Deployment Imaging Servicing and Management (dism.exe)"
+    CMI_a_LoadProfile             = "Profil laden"
+    CMI_b_SaveProfile             = "Profil speichern"
+    CMI_c_DelProfile              = "Profil löschen"
     BT_TaskScheduler              = "Aufgabenplanung"
     BT_Cmd                        = "Eingabeaufforderung"
     BT_Cmd_help                   = "Befehlsübersicht"
@@ -154,13 +160,22 @@ $Txt_List = @{
     BT_ChangeBackground           = "Hintergrundbild anpassen"
     BT_ChangeBehavior             = "Verhalten anpassen"
     BT_ChangeFont                 = "Schriftart anpassen"
+    BT_ManageProfiles             = "Profile verwalten"
     TT_Cmd_HDDRepair              = "$env:windir\system32\cmd.exe /k chkdsk [Volume] /f /r /x"
     TT_Cmd_WinRepair              = "$env:windir\system32\cmd.exe /k [sfc /scannow][dism /Online /Cleanup-Image /RestoreHealth]"
 }
 
 $MB_List = @{
-    Ini_01 = "Konnte Datei {0} nicht finden."
-    Ini_02 = "Administration: Fehler!"
+    Ini_01    = "Konnte Datei {0} nicht finden."
+    Ini_02    = "Administration: Fehler"
+    Del_01    = "Soll die Datei {0} wirklich gelöscht werden?"
+    Del_02    = "Administration: Löschbestätigung"
+    DelNo_01  = "Die Einstellungsdatei kann nicht gelöscht werden!"
+    DelNo_02  = "Administration: Fehler"
+    LoadNo_01 = "Die Einstellungsdatei ist bereits geladen!"
+    LoadNo_02 = "Administration: Info"
+    SaveNo_01 = "Die Einstellungsdatei kann nicht überschrieben werden!"
+    SaveNo_02 = "Administration: Fehler"
 }
 
 # =============================================================
@@ -299,6 +314,28 @@ function Create-Object ([string]$Name, [string]$Type, [HashTable]$Data, [array]$
         If ($Control)
             {
                 Invoke-Expression -Command ("`$$Control.Controls.Add(`$$Name)")
+            }
+    }
+
+# -------------------------------------------------------------
+
+function Create-Shortcut ([string]$Path, [HashTable]$Data, [bool]$RunAs)
+    {
+        $WshShell = New-Object -ComObject WScript.Shell
+        $Shortcut = $WshShell.CreateShortcut($Path)
+
+        ForEach ($k in $Data.Keys)
+            {
+                $Shortcut.$k = $Data.$k
+            }
+
+        $Shortcut.Save()
+
+        If ($RunAs)
+            {
+                $Bytes = [System.IO.File]::ReadAllBytes($Path)
+                $Bytes[21] = $Bytes[21] -bor [System.Convert]::ToByte(100000,2)
+                [System.IO.File]::WriteAllBytes($Path, $Bytes)
             }
     }
 
@@ -878,6 +915,13 @@ If ($Result)
         Synchronize-Me -Table $Ini -Path $SettingsFile
     }
 
+# -------------------------------------------------------------
+
+If (!(Test-Path -Path $Profiles))
+    {
+        New-Item -Path $Profiles -ItemType Directory -Force | Out-Null
+    }
+
 # =============================================================
 # ========== Autostart ========================================
 # =============================================================
@@ -1135,6 +1179,121 @@ $WinRepairContextMenuItems = @{
 }
 
 # =============================================================
+# ========== ManageProfilesContextMenuItems ===================
+# =============================================================
+
+$ManageProfilesContextMenuItems = @{
+    a_LoadProfile = @{
+        Text = $Txt_List.CMI_a_LoadProfile
+        Image = "$env:windir\system32\imageres.dll,195"
+        Method = [Method]::Extract
+        Action = {Add_Click(
+            {
+                $File = New-Object -TypeName System.Windows.Forms.OpenFileDialog
+                $File.InitialDirectory = $Profiles
+                $File.Filter = "Ini-Dateien (*.ini)|*.ini"
+                $File.Title = $Txt_List.CMI_a_LoadProfile
+                $File.Multiselect = $false
+                $File.RestoreDirectory = $false
+
+                If ($File.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK)
+                    {
+                        If ($File.FileName -ne $SettingsFile)
+                            {
+                                $Script:Ini = Initialize-Me -FilePath $File.FileName
+
+                                $Result = Compare-Object -ReferenceObject @($Ini_Bak.Keys) -DifferenceObject @($Ini.Keys) -PassThru
+
+                                If ($Result)
+                                    {
+                                        $Result | ForEach-Object {If ($_ -notin $Ini.Keys) {$Ini.$_ = $Ini_Bak.$_}}
+                                    }
+
+                                Synchronize-Me -Table $Ini -Path $SettingsFile
+
+                                $ht_Data = @{
+                                    TargetPath = "$PSHOME\powershell.exe"
+                                    Arguments = "-ExecutionPolicy Bypass -WindowStyle Hidden -File `"$Global:Me`""
+                                    WorkingDirectory = Split-Path -Path $Global:Me -Parent
+                                    IconLocation = $Ini.IconFolder + "Administration.ico,0"
+                                }
+
+                                Create-Shortcut -Path $Restart -Data $ht_Data -RunAs $true
+
+                                Start-Process -FilePath Explorer -ArgumentList $Restart
+
+                                $Ini.SysTray = 0
+                                $MainForm.Close()
+                            }
+                        Else
+                            {
+                                [System.Windows.Forms.MessageBox]::Show($MB_List.LoadNo_01,$MB_List.LoadNo_02,[System.Windows.Forms.MessageBoxButtons]::OK,[System.Windows.Forms.MessageBoxIcon]::Information)
+                            }
+                    }
+
+            }
+        )}
+    }
+    b_SaveProfile = @{
+        Text = $Txt_List.CMI_b_SaveProfile
+        Image = "$env:windir\system32\imageres.dll,195"
+        Method = [Method]::Extract
+        Action = {Add_Click(
+            {
+                $File = New-Object -TypeName System.Windows.Forms.SaveFileDialog
+                $File.InitialDirectory = $Profiles
+                $File.Filter = "Ini-Dateien (*.ini)|*.ini"
+                $File.Title = $Txt_List.CMI_b_SaveProfile
+                $File.CreatePrompt = $false
+                $File.OverwritePrompt = $true
+
+                If ($File.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK)
+                    {
+                        If ($File.FileName -ne $SettingsFile)
+                            {
+                                Synchronize-Me -Table $Ini -Path $File.FileName
+                            }
+                        Else
+                            {
+                                [System.Windows.Forms.MessageBox]::Show($MB_List.SaveNo_01,$MB_List.SaveNo_02,[System.Windows.Forms.MessageBoxButtons]::OK,[System.Windows.Forms.MessageBoxIcon]::Error)
+                            }
+                    }
+            }
+        )}
+    }
+    c_DelProfile = @{
+        Text = $Txt_List.CMI_c_DelProfile
+        Image = "$env:windir\system32\imageres.dll,195"
+        Method = [Method]::Extract
+        Action = {Add_Click(
+            {
+                $File = New-Object -TypeName System.Windows.Forms.OpenFileDialog
+                $File.InitialDirectory = $Profiles
+                $File.Filter = "Ini-Dateien (*.ini)|*.ini"
+                $File.Title = $Txt_List.CMI_c_DelProfile
+                $File.Multiselect = $false
+                $File.RestoreDirectory = $false
+
+                If ($File.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK)
+                    {
+                        If ($File.FileName -ne $SettingsFile)
+                            {
+                                If ([System.Windows.Forms.MessageBox]::Show(($MB_List.Del_01 -f $File.FileName),$MB_List.Del_02,[System.Windows.Forms.MessageBoxButtons]::YesNo,[System.Windows.Forms.MessageBoxIcon]::Stop) -eq [System.Windows.Forms.DialogResult]::Yes)
+                                    {
+                                        Remove-Item -Path $File.FileName -Force
+                                    }
+                            }
+                        Else
+                            {
+                                [System.Windows.Forms.MessageBox]::Show($MB_List.DelNo_01,$MB_List.DelNo_02,[System.Windows.Forms.MessageBoxButtons]::OK,[System.Windows.Forms.MessageBoxIcon]::Error)
+                            }
+                    }
+            }
+        )}
+    }
+}
+
+# =============================================================
 # ========== Insertions: SysTrayContextMenuItems ==============
 # =============================================================
 
@@ -1233,6 +1392,20 @@ $ItemRange = Insert-ContextMenuItems -ItemList $WinRepairContextMenuItems
 $ar_Events = @({Items.AddRange(@($ItemRange))})
 
 Create-Object -Name WinRepairContextMenu -Type ContextMenuStrip -Data $ht_Data -Events $ar_Events
+
+# =============================================================
+# ========== Insertions: ManageProfilesContextMenuItems =======
+# =============================================================
+
+$ItemRange = Insert-ContextMenuItems -ItemList $ManageProfilesContextMenuItems
+
+# =============================================================
+# ========== ManageProfilesContextMenu ========================
+# =============================================================
+
+$ar_Events = @({Items.AddRange(@($ItemRange))})
+
+Create-Object -Name ManageProfilesContextMenu -Type ContextMenuStrip -Data $ht_Data -Events $ar_Events
 
 # =============================================================
 # ========== Buttons-List =====================================
@@ -1623,6 +1796,14 @@ $Buttons_List = @{
         Method = [Method]::Extract
         ContextMenuStrip = $ChangeFontContextMenu
         }
+    ManageProfiles = @{
+        Size = $Button.Size
+        Text = $Txt_List.BT_ManageProfiles
+        Location = [Panels]::Settings
+        Image = "$env:windir\system32\imageres.dll,74"
+        Method = [Method]::Extract
+        ContextMenuStrip = $ManageProfilesContextMenu
+        }
 }
 
 # =============================================================
@@ -1648,7 +1829,6 @@ $ar_Events = @(
             [Win32Functions.WinAPI]::ShowWindowAsync($this.Handle, 1)
         }
     )}
-
     {Add_FormClosing(
         {
             If ([bool][int]$Ini.SysTray)
