@@ -126,6 +126,7 @@ $Txt_List = @{
     BT_Cmd_ipconfig               = "IP-/Netzwerkadresse"
     BT_Cmd_flushdns               = "DNS-Cache leeren"
     BT_Cmd_WinRepair              = "Windows-Reparatur"
+    BT_Cmd_netstat                = "Netzwerkverbindungen"
     BT_DiskManagement             = "Datenträgerverwaltung"
     BT_DirectXDiagnosis           = "DirectX-Diagnoseprogramm"
     BT_ImmersiveControlPanel      = "Einstellungen"
@@ -559,22 +560,11 @@ function Change-Font ([string]$Title, [ScriptBlock]$Action)
                 $X = (20 + (($i % 5) * 120))
                 $Y = (20 + ($i * 6) - (($i % 5) * 6))
 
-                If ($Fonts[$i].Name.Length -lt 11)
-                    {
-                        $Sub = $Fonts[$i].Name.Length
-                        $Addendum = [string]::Empty
-                    }
-                Else
-                    {
-                        $Sub = 8
-                        $Addendum = "..."
-                    }
-
                 $ht_Data = @{
                     TabStop = $false
                     Location = [System.Drawing.Point]::new($X,$Y)
                     Size = [System.Drawing.Size]::new(114,24)
-                    Text = $Fonts[$i].Name.Substring(0,$Sub) + $Addendum
+                    Text = ($Fonts[$i].Name + [string]::new([char]32,11)).Substring(0,11)
                     TextAlign = [System.Drawing.ContentAlignment]::MiddleCenter
                     Font = New-Object -TypeName System.Drawing.Font($Fonts[$i].Name, $Font.Size, $Font.Style)
                     FlatStyle = [System.Windows.Forms.FlatStyle]::Flat
@@ -1488,6 +1478,16 @@ $Buttons_List = @{
         Method = [Method]::Associate
         ContextMenuStrip = $WinRepairContextMenu
         Tooltip = $Txt_List.TT_Cmd_WinRepair
+        }
+    Cmd_netstat = @{
+        Size = $Button.Size
+        Text = $Txt_List.BT_Cmd_netstat
+        Location = [Panels]::Cmd
+        Image = "$env:windir\system32\cmd.exe"
+        Method = [Method]::Associate
+        File = "$env:windir\system32\cmd.exe"
+        Args = "/k netstat -ano"
+        Dir = "$env:windir\system32"
         }
     DiskManagement = @{
         Size = $Button.Size
