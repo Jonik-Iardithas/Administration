@@ -157,6 +157,7 @@ $Txt_List = @{
     BT_DriveOptimizer             = "Laufwerksoptimierung"
     BT_RecoveryDrive              = "Wiederherstellungslaufwerk"
     BT_MemoryDiagnosisScheduler   = "Windows-Speicherdiagnose"
+    BT_MSRT                       = "Schadsoftware-Entferner"
     BT_ChangeColor                = "Farben anpassen"
     BT_ChangeBackground           = "Hintergrundbild anpassen"
     BT_ChangeBehavior             = "Verhalten anpassen"
@@ -404,6 +405,7 @@ function Change-Background ([string]$Title, [string]$Path, [string]$SearchMask, 
             FormBorderStyle = [System.Windows.Forms.FormBorderStyle]::FixedSingle
             MaximizeBox = $false
             MinimizeBox = $false
+            AutoScroll = $true
         }
 
         $ar_Events = @(
@@ -468,6 +470,7 @@ function Change-Color ([string]$Title, [ScriptBlock]$Action)
             FormBorderStyle = [System.Windows.Forms.FormBorderStyle]::FixedSingle
             MaximizeBox = $false
             MinimizeBox = $false
+            AutoScroll = $true
         }
 
         $ar_Events = @(
@@ -534,6 +537,7 @@ function Change-Font ([string]$Title, [ScriptBlock]$Action)
             FormBorderStyle = [System.Windows.Forms.FormBorderStyle]::FixedSingle
             MaximizeBox = $false
             MinimizeBox = $false
+            AutoScroll = $true
         }
 
         $ar_Events = @(
@@ -557,8 +561,8 @@ function Change-Font ([string]$Title, [ScriptBlock]$Action)
 
         For($i = 0; $i -lt $Fonts.Count; $i++)
             {
-                $X = (20 + (($i % 5) * 120))
-                $Y = (20 + ($i * 6) - (($i % 5) * 6))
+                $X = (20 + (($i % 10) * 120))
+                $Y = (20 + ($i * 3) - (($i % 10) * 3))
 
                 $ht_Data = @{
                     TabStop = $false
@@ -1764,6 +1768,15 @@ $Buttons_List = @{
         File = "$env:windir\system32\MdSched.exe"
         Dir = "$env:windir\system32"
         }
+    MSRT = @{
+        Size = $Button.Size
+        Text = $Txt_List.BT_MSRT
+        Location = [Panels]::Tools
+        Image = "$env:windir\system32\MRT.exe"
+        Method = [Method]::Associate
+        File = "$env:windir\system32\MRT.exe"
+        Dir = "$env:windir\system32"
+    }
     ChangeColor = @{
         Size = $Button.Size
         Text = $Txt_List.BT_ChangeColor
